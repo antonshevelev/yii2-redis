@@ -11,11 +11,12 @@ use yiiunit\extensions\redis\support\ConnectionWithErrorEmulator;
 /**
  * @group redis
  */
-class ConnectionTest extends TestCase
+class RedisConnectionTest extends TestCase
 {
-    protected function tearDown()
+    protected function tearDown(): void
     {
         $this->getConnection(false)->configSet('timeout', 0);
+        $this->getConnection()->close();
         parent::tearDown();
     }
 
@@ -106,13 +107,21 @@ class ConnectionTest extends TestCase
         $this->assertTrue($db->ping());
         sleep(1);
         $this->assertTrue($db->ping());
-        sleep(2);
-        if (method_exists($this, 'setExpectedException')) {
-            $this->setExpectedException('\yii\redis\SocketException');
-        } else {
-            $this->expectException('\yii\redis\SocketException');
+
+        $db->close();
+        $db->on(Connection::EVENT_AFTER_OPEN, function() {
+            // sleep 2 seconds after connect to make every command time out
+            sleep(2);
+        });
+
+        $exception = false;
+        try {
+            sleep(3);
+            $db->ping();
+        } catch (SocketException $e) {
+            $exception = true;
         }
-        $this->assertTrue($db->ping());
+        $this->assertTrue($exception, 'SocketException should have been thrown.');
     }
 
     public function testConnectionTimeoutRetry()
@@ -187,7 +196,7 @@ class ConnectionTest extends TestCase
         try {
             // should try to reconnect 2 times, before finally failing
             // results in 3 times sending the PING command to redis
-            sleep(2);
+            sleep(4);
             $db->ping();
         } catch (SocketException $e) {
             $exception = true;
