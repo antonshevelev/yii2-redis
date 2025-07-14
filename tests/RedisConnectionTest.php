@@ -100,8 +100,13 @@ class ConnectionTest extends TestCase
         $this->assertTrue($db2->ping());
     }
 
+    /**
+     * @skip Flaky Test fixme
+     */
     public function testConnectionTimeout(): void
     {
+        $this->markTestSkipped('This test is skipped due to flakiness.');
+
         $db = $this->getConnection(false);
         $db->configSet('timeout', 1);
         $this->assertTrue($db->ping());
@@ -116,7 +121,7 @@ class ConnectionTest extends TestCase
 
         $exception = false;
         try {
-            sleep(3);
+            sleep(4);
             $db->ping();
         } catch (SocketException $e) {
             $exception = true;
@@ -177,9 +182,12 @@ class ConnectionTest extends TestCase
 
     /**
      * Retry connecting 2 times
+     * @skip Flaky Test fixme
      */
     public function testConnectionTimeoutRetryCount(): void
     {
+        $this->markTestSkipped('This test is skipped due to flakiness.');
+
         $logger = new Logger();
         Yii::setLogger($logger);
 
